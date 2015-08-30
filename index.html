@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Color Picker with Custom Cursor</title>
+		<style>
+			body {
+				cursor:default;
+				margin:0;
+				font-family:Roboto, sans-serif;
+			}
+			#picture {
+				font-family:inherit;
+				font-size:20px;
+				width:400px;
+				padding:5px;
+				border:2px solid #CCC;
+				margin-top:20px;
+			}
+			#submit {
+				font-family:inherit;
+				font-size:20px;
+				padding:5px;
+				border:2px solid #CCC;
+				background-color:#FFF;
+				cursor:pointer;
+				margin-left:10px;
+				margin-top:20px;
+			}
+			#canvas {
+				border:3px dashed #CCC;
+				box-sizing:content-box;
+				z-index:9999;
+				position:relative;
+			}
+			#canvasCenter {
+				position:relative;
+			}
+			#canvasCenter::after {
+				content:attr(data-content);
+				position:absolute;
+				height:100%;
+				width:100%;
+				font-size:30px;
+				line-height:160px;
+				font-family:inherit;
+				color:#CCC;
+				font-weight:bold;
+				text-align:center;
+				display:block;
+				top:0;
+				left:0;
+			}
+			#info {
+				font-family:inherit;
+				font-size:12px;
+				padding-top:10px;
+			}
+			.button {
+				background-color: #f7f7f7;
+				border: 1px solid #ccc;
+				color: #333;
+				font-size: 11px;
+				line-height: 1.4;
+				text-shadow: 0 1px 0 #fff;
+				font-family:inherit;
+				display: inline-block;
+				padding: 0.1em 0.6em;
+				margin: 0 0.1em;
+				white-space: nowrap;
+				box-shadow: 0 1px 0px rgba(0,0,0,0.2),0 0 0 2px #fff inset;
+				border-radius: 3px;
+			}
+		</style>
+		<script>
+			function rgb2hex(rgb){
+				rgb = rgb.match(/^rgba?[\s+]?\([\s+]?(\d+)[\s+]?,[\s+]?(\d+)[\s+]?,[\s+]?(\d+)[\s+]?/i);
+				return (rgb && rgb.length === 4) ? "#" +
+				("0" + parseInt(rgb[1],10).toString(16)).slice(-2) +
+				("0" + parseInt(rgb[2],10).toString(16)).slice(-2) +
+				("0" + parseInt(rgb[3],10).toString(16)).slice(-2) : '';
+			}
+			function loadImage() {
+				var tempImage = document.createElement('img');
+				tempImage.crossOrigin = "Anonymous";
+				tempImage.src = document.getElementById('picture').value;
+				tempImage.onload = function() {
+					var newImage = document.getElementById('canvas');
+					newImage.width = tempImage.width;
+					newImage.height = tempImage.height;
+					document.getElementById('canvasCenter').setAttribute('data-content', '');
+					newImage.getContext('2d').drawImage(tempImage, 0, 0);
+					newImage.onmousemove = function(e) {
+						var rect = this.getBoundingClientRect();
+						var relX = e.pageX - (rect.left + document.body.scrollLeft) - 3;
+						var relY = e.pageY - (rect.top + document.body.scrollTop) - 3;
+						var newImage = document.getElementById('canvas');
+						cursorData = newImage.getContext('2d').getImageData(relX, relY, 1, 1).data;
+						var color = 'rgba(' + cursorData[0] + ',' + cursorData[1] + ',' + cursorData[2] + ',' + (cursorData[3] / 255) + ')';
+						makeCursor(color);
+					};
+					newImage.onclick = function(e) {
+						var rect = this.getBoundingClientRect();
+						var relX = e.pageX - (rect.left + document.body.scrollLeft) - 3;
+						var relY = e.pageY - (rect.top + document.body.scrollTop) - 3;
+						var newImage = document.getElementById('canvas');
+						cursorData = newImage.getContext('2d').getImageData(relX, relY, 1, 1).data;
+						//console.log('rgba(' + cursorData[0] + ',' + cursorData[1] + ',' + cursorData[2] + ',' + (cursorData[3] / 255) + ')');
+						//Coloured console logs are pretty, but they don't work on ie.
+						console.log('%crgba(' + cursorData[0] + ',' + cursorData[1] + ',' + cursorData[2] + ',' + (cursorData[3] / 255) + ')\n' + rgb2hex('rgb(' + cursorData[0] + ',' + cursorData[1] + ',' + cursorData[2] + ')'), 'background: rgba(' + cursorData[0] + ',' + cursorData[1] + ',' + cursorData[2] + ',' + (cursorData[3] / 255) + ')');
+					};
+				};
+			}
+			function makeCursor(color) {
+				var cursor = document.createElement('canvas'),
+					ctx = cursor.getContext('2d');
+
+				cursor.width = 41;
+				cursor.height = 41;
+				
+				ctx.beginPath();
+				ctx.lineWidth = 2;
+				ctx.strokeStyle = '#000000';
+				ctx.moveTo(0, 6);
+				ctx.lineTo(12, 6);
+				ctx.moveTo(6, 0);
+				ctx.lineTo(6, 12); 
+				ctx.stroke();
+				
+				ctx.beginPath();
+				ctx.arc(25, 25, 14, 0, 2 * Math.PI, false);
+				ctx.lineWidth = 2;
+				ctx.strokeStyle = '#000000';
+				ctx.stroke();
+				ctx.beginPath();
+				ctx.arc(25, 25, 13.4, 0, 2 * Math.PI, false);
+				ctx.fillStyle = color;
+				ctx.fill();
+				
+				document.getElementById('canvas').style.cursor = 'crosshair';
+				document.getElementById('canvas').style.cursor = 'url(' + cursor.toDataURL() + ') 6 6, crosshair';
+			}
+		</script>
+	</head>
+	<body>
+		<center>
+			<input type="text" name="picture" id="picture" placeholder="http://some-domain.com/some-image.png" />
+			<button onclick="loadImage();" type="button" id="submit">Get image</button>
+		</center>
+		<center id="info">Image must have an Access-Control-Allow-Origin value of '*'. (e.g. Images from a dropbox public folder will usually work) Or, load 'test.png'.</center>
+		<br />
+		<br />
+		<br />
+		<center id="canvasCenter" data-content="Load an image">
+			<canvas id="canvas"></canvas>
+		</center>
+		<center id="info">Clicking will output the color to the console. (Use <span class="button">Ctrl + Shift + J</span> in Chrome or <span class="button">Ctrl + Shift + K</span> in Firefox)</center>
+	</body>
+</html>
